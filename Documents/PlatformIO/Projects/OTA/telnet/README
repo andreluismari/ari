@@ -1,0 +1,96 @@
+#include <ESP8266WiFi.h>   
+#include <ArduinoOTA.h>
+
+# Essas bibliotecas são  para gerenciar a conexão Wi-Fi e as atualizações
+
+const char* ssid = "andre";
+const char* password = "andre1997";
+
+# Nome da rede e a senha para de conectar 
+
+const int LED_PIN = 5; // D1
+# define que o led esta conecta ao pino 5 
+
+WiFiServer server(23); 
+WiFiClient client;
+
+# um servidor Telnet é configurado na porta 23 e uma variável para o cliente é criada para interagir com dispositivos conectados
+
+O pinMode(LED_PIN, OUTPUT) 
+# define o pino como saída para controlar o LED.
+
+serial.begin(9600)
+#  inicializa a comunicação serial para monitoramento.
+
+WiFi.mode(WIFI_STA)
+
+# coloca o wi-fi no modo estação 
+
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.println("Conexão falhou, tentando novamente...");
+    WiFi.begin(ssid, password);
+    delay(5000);
+  }
+ # o codido aguarda 5 segundos para que a conexão seja bem sucessida se falhar ele tenta novamente
+
+
+   ArduinoOTA.onStart([]() {
+    Serial.println("Iniciando atualização OTA...");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nAtualização concluída.");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progresso: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Erro[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("Falha na autenticação");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("Falha no início");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("Falha na conexão");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("Falha no recebimento");
+    else if (error == OTA_END_ERROR) Serial.println("Falha na finalização");
+  });
+
+
+# esse codigo notifica e mostra atualização, progresso e exibe mensagens de erro 
+
+  ArduinoOTA.begin();  
+  Serial.println("Pronto para atualizações OTA.");
+  Serial.print("Endereço IP: ");
+  Serial.println(WiFi.localIP());  
+
+# Aqui, o serviço OTA é iniciado e o endereço IP do ESP8266 é exibido no monitor serial para que o usuário possa localizar o dispositivo na rede
+
+  if (server.hasClient()) {
+    if (!client || !client.connected()) {
+      if (client) client.stop();
+      client = server.available();
+      Serial.println("Cliente conectado via Telnet.");
+      client.println("Digite '1' para ligar o LED e '0' para desligar o LED.");
+    } else {
+      server.available().stop();
+    }
+  }
+
+
+# Esse codigo verifica se a novos clientes telnet tentando de conectar, se o cliente anterior tiver desconectado, ele aceita uma nova conexão 
+
+  if (client && client.connected() && client.available()) {
+    char command = client.read();
+    if (command == '1') {
+      digitalWrite(LED_PIN, LOW);   // Liga o LED (nível lógico baixo).
+      client.println("LED ligado.");
+      Serial.println("LED ligado.");
+    } else if (command == '0') {
+      digitalWrite(LED_PIN, HIGH);  // Desliga o LED (nível lógico alto).
+      client.println("LED desligado.");
+      Serial.println("LED desligado.");
+    } else {
+      client.println("Comando inválido. Digite '1' para ligar o LED e '0' para desligar o LED.");
+    }
+  }
+}
+
+
+# esse trecho le comandos se o comando for 1 o led é ligado e o comando for 0 o led é desligado 
